@@ -1,0 +1,8 @@
+# Edge guard only runs on the routes you want protected
+[[edge_functions]]
+path = "/"
+function = "guard"
+
+[[edge_functions]]
+path = "/tools"
+function = "guard"

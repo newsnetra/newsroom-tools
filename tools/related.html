@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Related Story Snippet – Newsroom Tools</title>
+    <link rel="stylesheet" href="../assets/site.css" />
+
+    <!-- Live preview styles (scoped to the provided HTML only) -->
+    <style>
+        /* Related box (scoped to the provided HTML) */
+        aside.related-box {
+            font-family: 'museo-sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            color: #00243e;
+            /* ink */
+            line-height: 1.5;
+            padding: 18px 22px;
+            margin: 40px 0;
+            background: #ffffff;
+            /* panel bg */
+            border: 2px solid #00243e;
+            position: relative;
+            box-shadow: 13px 13px 0 0 #ffffff, 15px 15px 0 0 #00243e, 15px 11px 0 0 #00243e, 11px 15px 0 0 #00243e;
+        }
+
+        aside.related-box a {
+            color: #00243e;
+            text-decoration: none;
+        }
+
+        aside.related-box a:hover,
+        aside.related-box a:focus {
+            text-decoration: underline;
+        }
+
+        /* Label */
+        aside.related-box .related-label {
+            display: inline-block;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: #1f4461;
+            /* muted */
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        aside.related-box .related-label::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #00243e;
+            transform: translateY(-50%);
+        }
+
+        /* Title */
+        aside.related-box .related-title {
+            font-weight: 700;
+            font-size: clamp(16px, 2.4vw, 20px);
+            margin: 2px 0 6px;
+        }
+
+        /* Meta row */
+        aside.related-box .related-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 13px;
+            color: #1f4461;
+            /* muted */
+        }
+
+        /* CTA button (icon link) */
+        aside.related-box .related-cta {
+            margin-left: auto;
+            display: inline-grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid #00243e;
+            color: #00243e;
+            /* makes SVG stroke inherit */
+            transition: transform .1s ease-in-out, background-color .15s ease-in-out;
+        }
+
+        aside.related-box .related-cta:hover,
+        aside.related-box .related-cta:focus {
+            background: #f4f8fc;
+            transform: translateY(-1px);
+        }
+
+        aside.related-box .related-cta svg {
+            display: block;
+        }
+
+        /* Decorative rule */
+        aside.related-box .related-rule {
+            height: 6px;
+            background: #ccccff;
+            /* accent rule */
+            margin: 12px 0 0;
+        }
+
+        .byline {
+            gap: 5px;
+            display: flex;
+        }
+
+        /* Small screens */
+        @media (max-width:450px) {
+            aside.related-box {
+                padding: 16px 18px;
+                margin: 24px 0;
+            }
+
+            aside.related-box .related-meta {
+                gap: 8px;
+            }
+        }
+
+        /* Accessibility: visible focus ring for keyboard users */
+        aside.related-box a:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <nav class="top-nav">
+            <a href="../index.html" class="btn secondary">← Back to tools</a>
+        </nav>
+
+        <header>
+            <h1>Related Story Snippet</h1>
+            <p class="lede">
+                Enter a story URL — this tool will fetch its title, author, and date
+                (supports <code>og:title</code>, <code>article:published_time</code>,
+                and <code>.post-card-byline-author .author-link</code>).
+            </p>
+        </header>
+
+        <!-- URL Fetch -->
+        <section class="panel">
+            <form class="tool-form" onsubmit="event.preventDefault(); fetchMetadata();">
+                <div class="row two">
+                    <div>
+                        <label for="url">Story URL</label>
+                        <input id="url" type="url" placeholder="https://netra.news/2025/..." required />
+                        <small class="help">If fetch is blocked by CORS, paste HTML below.</small>
+                    </div>
+                    <div class="right">
+                        <button class="btn" type="submit">Fetch metadata</button>
+                    </div>
+                </div>
+
+                <details>
+                    <summary><strong>Fallback:</strong> paste full HTML</summary>
+                    <textarea id="htmlPaste" placeholder="Paste page HTML here if needed"></textarea>
+                    <div class="right">
+                        <button class="btn secondary" type="button" onclick="parsePasted()">Parse pasted HTML</button>
+                    </div>
+                </details>
+            </form>
+        </section>
+
+        <!-- Manual fields -->
+        <section class="panel">
+            <form class="tool-form" onsubmit="event.preventDefault(); buildSnippet();">
+                <div class="row">
+                    <label for="title">Story title</label>
+                    <input id="title" type="text" placeholder="Enter headline" required />
+                </div>
+
+                <div class="row two">
+                    <div>
+                        <label for="author">Author</label>
+                        <input id="author" type="text" placeholder="Author name" required />
+                    </div>
+                    <div>
+                        <label for="date">Publish date</label>
+                        <input id="date" type="date" required />
+                        <small class="help">Displayed as <em>April 23rd</em> or <em>September 5th 2025</em>.</small>
+                    </div>
+                </div>
+
+                <div class="row two align-center">
+                    <div class="inline">
+                        <input id="include-year" type="checkbox" checked />
+                        <label for="include-year">Include year</label>
+                    </div>
+                    <div class="right">
+                        <button class="btn" type="submit">Generate HTML</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- Output -->
+        <section class="panel">
+            <div class="output-wrap" aria-live="polite" aria-atomic="true">
+                <label for="output">Copy HTML</label>
+                <textarea id="output" readonly></textarea>
+                <div>
+                    <button class="btn" type="button" onclick="copyOut()">Copy HTML</button>
+                    <button class="btn secondary" type="button" onclick="fillDemo()">Load demo</button>
+                </div>
+
+                <div class="preview-title">Live preview</div>
+                <div id="preview"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function ensureNetra(urlStr) {
+            try {
+                const u = new URL(urlStr);
+                // Must be HTTPS and either netra.news or any *.netra.news subdomain
+                const domainOk = u.hostname === "netra.news" || u.hostname.endsWith(".netra.news");
+                const httpsOk = u.protocol === "https:";
+                return domainOk && httpsOk;
+            } catch {
+                return false;
+            }
+        }
+
+        async function fetchMetadata() {
+            const url = document.getElementById("url").value.trim();
+            if (!url) return;
+
+            if (!ensureNetra(url)) {
+                alert("Safety check: Only https://netra.news or its subdomains (e.g. interactives.netra.news) are allowed.");
+                return;
+            }
+
+            try {
+                const res = await fetch(url, { mode: "cors", credentials: "omit" });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const html = await res.text();
+                extractAndFill(html);
+            } catch (err) {
+                alert("Fetch blocked (likely CORS) or failed. Paste HTML manually instead.");
+            }
+        }
+
+        async function fetchMetadata() {
+            const url = document.getElementById('url').value.trim();
+            if (!url) return;
+
+            if (!ensureNetra(url)) {
+                alert('Safety check: Only netra.news URLs can be fetched. Paste the HTML instead.');
+                return;
+            }
+
+            try {
+                const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const html = await res.text();
+                extractAndFill(html);
+            } catch (err) {
+                alert("Fetch blocked (likely CORS) or failed. Paste HTML manually instead.");
+            }
+        }
+
+        function parsePasted() {
+            const html = document.getElementById('htmlPaste').value.trim();
+            if (html) extractAndFill(html);
+        }
+
+        function extractAndFill(html) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            // Title
+            const title =
+                doc.querySelector('meta[property="og:title"]')?.content ||
+                doc.querySelector('meta[name="twitter:title"]')?.content ||
+                (doc.title || '').trim();
+
+            // Author priority: article:author → og:author → name=author → body
+            let author =
+                doc.querySelector('meta[property="article:author"]')?.content ||
+                doc.querySelector('meta[property="og:author"]')?.content ||
+                doc.querySelector('meta[name="author"]')?.content || '';
+
+            if (!author) {
+                const sel = [
+                    '.post-card-byline-author .author-link',
+                    '.post-card-byline-author',
+                    '[rel="author"]',
+                    '.author-link',
+                    '.post-full-author-name',
+                    '.byline a',
+                    '[itemprop="author"], [itemprop="author"] [itemprop="name"]'
+                ];
+                for (const s of sel) {
+                    const el = doc.querySelector(s);
+                    if (el) {
+                        author = el.textContent.trim();
+                        if (author) break;
+                    }
+                }
+            }
+
+            // Date
+            let dateIso =
+                doc.querySelector('meta[property="article:published_time"]')?.content ||
+                doc.querySelector('meta[name="pubdate"]')?.content ||
+                doc.querySelector('meta[itemprop="datePublished"]')?.content || '';
+
+            if (!dateIso) {
+                const timeEl = doc.querySelector('time[datetime]');
+                if (timeEl) dateIso = timeEl.getAttribute('datetime') || '';
+            }
+
+            if (title) document.getElementById('title').value = title;
+            if (author) document.getElementById('author').value = author;
+
+            if (dateIso) {
+                const d = new Date(dateIso);
+                if (!isNaN(d)) {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    document.getElementById('date').value = `${y}-${m}-${day}`;
+                }
+            }
+        }
+
+        function buildSnippet() {
+            const url = document.getElementById('url').value.trim();
+            const title = document.getElementById('title').value.trim();
+            const author = document.getElementById('author').value.trim();
+            const dateIso = document.getElementById('date').value;
+            const includeYear = document.getElementById('include-year').checked;
+
+            // Hard validation: all three must be present
+            if (!title) { alert('Missing story title.'); return; }
+            if (!author) { alert('Missing author/byline.'); return; }
+            if (!dateIso) { alert('Missing publish date.'); return; }
+
+            const dateTxt = formatDate(dateIso, includeYear);
+            if (!dateTxt) { alert('Invalid publish date.'); return; }
+
+            const html = `
+<aside class="related-box" aria-label="Related story">
+  <div class="related-label">Related</div>
+
+  <h3 class="related-title">
+    <a href="${esc(url)}" target="_blank" rel="noopener">
+      ${esc(title)}
+    </a>
+  </h3>
+
+  <div class="related-meta">
+    <span class="byline"><span>${esc(author)}</span><span class="sep">·</span><span>${esc(dateTxt)}</span></span>
+    <a class="related-cta" href="${esc(url)}" target="_blank" rel="noopener" aria-label="Open related story">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12h12M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+
+  <div class="related-rule" role="presentation"></div>
+</aside>
+      `.trim();
+
+            document.getElementById('output').value = html;
+            document.getElementById('preview').innerHTML = html;
+        }
+
+        function esc(str) {
+            return String(str).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function ordinal(n) {
+            const s = ["th", "st", "nd", "rd"], v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function formatDate(iso, includeYear = true) {
+            if (!iso) return "";
+            const d = new Date(iso + "T00:00:00");
+            if (isNaN(d)) return "";
+            const month = d.toLocaleString(undefined, { month: "long" });
+            const day = ordinal(d.getDate());
+            const year = d.getFullYear();
+            return includeYear ? `${month} ${day} ${year}` : `${month} ${day}`;
+        }
+
+        function copyOut() {
+            const txt = document.getElementById('output').value;
+            if (!txt) return;
+            navigator.clipboard.writeText(txt).then(() => alert("Copied!"));
+        }
+
+        function fillDemo() {
+            document.getElementById('url').value =
+                "https://netra.news/2025/palatine-awami-league-lobbying-pr-uk/";
+        }
+    </script>
+</body>
+
+</html>
