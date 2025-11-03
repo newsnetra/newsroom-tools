@@ -1,29 +1,22 @@
-# --- Build settings ---
-[build]
-  # If you have a specific publish dir, keep it; otherwise remove this line
-  # publish = "public"
-  edge_functions = "netlify/edge-functions"
-
-# --- Edge Functions directory ---
 [edge_functions]
-  directory = "netlify/edge-functions"
+directory = "netlify/edge-functions"
 
-# --- Route mappings ---
-# Protect homepage and /tools/*
+# Protect homepage
 [[edge_functions]]
-  path = "/"
-  function = "protect"
+function = "protect"
+path = "/"
 
+# Protect tools/*
 [[edge_functions]]
-  path = "/tools/*"
-  function = "protect"
+function = "protect"
+path = "/tools/*"
 
-# Optional logout route
+# Optional logout
 [[edge_functions]]
-  path = "/__logout"
-  function = "protect"
+function = "protect"
+path = "/__logout"
 
-# API route
+# Your API route
 [[edge_functions]]
-  path = "/api/fetch-metadata"
-  function = "fetch-metadata"
+function = "fetch-metadata"
+path = "/api/fetch-metadata"
