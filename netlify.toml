@@ -1,3 +1,28 @@
+# Place this at your repo root
+# (keep your existing [build] section if you already have one)
+
+[build]
+  # if you have a specific publish dir, keep it; otherwise remove this line
+  # publish = "public"
+
+[edge_functions]
+  directory = "netlify/edge-functions"
+
+# Protect only the homepage and /tools/*
+[[edge_functions]]
+  path = "/"
+  function = "protect"
+
+[[edge_functions]]
+  path = "/tools/*"
+  function = "protect"
+
+# (Optional) A logout path
+[[edge_functions]]
+  path = "/__logout"
+  function = "protect"
+
+
 [[edge_functions]]
 path = "/api/fetch-metadata"
 function = "fetch-metadata"
