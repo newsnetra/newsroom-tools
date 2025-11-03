@@ -106,9 +106,12 @@ export default async (req: Request) => {
         return null;
     }
     const byline =
-        meta("article:author") || meta("og:article:author") || meta("author");
+        getBylineFromHtml(html) || getBylineFromJsonLd(html);
     const published =
-        meta("article:published_time") || meta("og:article:published_time") || meta("publication_date") || meta("date");
+        meta("article:published_time") ||
+        meta("og:article:published_time") ||
+        meta("publication_date") ||
+        meta("date");
     const description = meta("og:description") || meta("twitter:description") || meta("description");
     const canonical = get(/<link[^>]+rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
 
