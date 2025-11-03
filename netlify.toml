@@ -1,22 +1,21 @@
+rm -f netlify.toml
+cat > netlify.toml <<'TOML'
 [edge_functions]
 directory = "netlify/edge-functions"
 
-# Protect homepage
 [[edge_functions]]
 function = "protect"
 path = "/"
 
-# Protect tools/*
 [[edge_functions]]
 function = "protect"
 path = "/tools/*"
 
-# Optional logout
 [[edge_functions]]
 function = "protect"
 path = "/__logout"
 
-# Your API route
 [[edge_functions]]
 function = "fetch-metadata"
 path = "/api/fetch-metadata"
+TOML
