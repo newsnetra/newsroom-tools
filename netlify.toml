@@ -1,5 +1,3 @@
-rm -f netlify.toml
-cat > netlify.toml <<'TOML'
 [edge_functions]
 directory = "netlify/edge-functions"
 
@@ -18,4 +16,3 @@ path = "/__logout"
 [[edge_functions]]
 function = "fetch-metadata"
 path = "/api/fetch-metadata"
-TOML
