@@ -132,6 +132,10 @@
             outline-offset: 2px;
             text-decoration: none;
         }
+
+        #fetch-btn[data-loading] { opacity: .6; pointer-events: none; }
+        #fetch-btn[data-loading]::after { content: " …"; }
+
     </style>
 </head>
 
@@ -239,46 +243,49 @@ function ensureNetra(urlStr) {
 
 // --- NEW: call Netlify API instead of fetching the article HTML directly ---
 async function fetchMetadata() {
+  const btn = document.querySelector("#fetch-btn");
   const url = document.getElementById("url").value.trim();
   if (!url) return;
+  if (!ensureNetra(url)) { alert("Only netra.news URLs allowed."); return; }
 
-  if (!ensureNetra(url)) {
-    alert("Safety check: Only https://netra.news or its subdomains (e.g. interactives.netra.news) are allowed.");
-    return;
-  }
-
+  btn?.setAttribute("disabled", "disabled");
+  btn?.setAttribute("data-loading", "1");
   try {
-    const r = await fetch(`${ENDPOINT}?url=${encodeURIComponent(url)}`, { method: "GET" });
+    const r = await fetch(`${ENDPOINT}?url=${encodeURIComponent(url)}`);
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
-      // 422 means your required fields were missing; show details if present
-      const msg = data?.error || `Fetch failed (${r.status})`;
-      throw new Error(msg);
+      // Show API detail when 422 (missing fields)
+      const details = data?.found
+        ? `\nFound:\n- title: ${!!data.found.title}\n- byline: ${!!data.found.byline}\n- published: ${!!data.found.published}`
+        : "";
+      throw new Error((data?.error || `Fetch failed (${r.status})`) + details);
     }
-    fillFromApi(data); // { title, byline, published, description?, canonical?, url }
+    fillFromApi(data);
   } catch (err) {
     console.error(err);
-    alert("Fetch blocked or failed. You can paste the page HTML instead.");
+    alert(err.message || "Fetch blocked or failed. Paste HTML instead.");
+  } finally {
+    btn?.removeAttribute("disabled");
+    btn?.removeAttribute("data-loading");
   }
 }
+
 
 // --- NEW: populate inputs from API JSON ---
 function fillFromApi(meta) {
-  const { title, byline, published } = meta || {};
-
+  const { title, byline, published, url } = meta || {};
   if (title) document.getElementById("title").value = title;
   if (byline) document.getElementById("author").value = byline;
-
   if (published) {
     const d = new Date(published);
     if (!isNaN(d)) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
+      const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
       document.getElementById("date").value = `${y}-${m}-${day}`;
     }
   }
+  try { localStorage.setItem("nr_related_cache", JSON.stringify({ url, title, byline, published })); } catch {}
 }
+
 
 // --- Keep: paste-HTML fallback path ---
 function parsePasted() {
