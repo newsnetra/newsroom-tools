@@ -1,8 +1,6 @@
-# Edge guard only runs on the routes you want protected
 [[edge_functions]]
-path = "/"
-function = "guard"
+path = "/api/fetch-metadata"
+function = "fetch-metadata"
 
-[[edge_functions]]
-path = "/tools"
-function = "guard"
+[build]
+  edge_functions = "netlify/edge-functions"

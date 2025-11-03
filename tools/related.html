@@ -223,136 +223,145 @@
     </div>
 
     <script>
-        function ensureNetra(urlStr) {
-            try {
-                const u = new URL(urlStr);
-                // Must be HTTPS and either netra.news or any *.netra.news subdomain
-                const domainOk = u.hostname === "netra.news" || u.hostname.endsWith(".netra.news");
-                const httpsOk = u.protocol === "https:";
-                return domainOk && httpsOk;
-            } catch {
-                return false;
-            }
-        }
+const ENDPOINT = "https://newsroom-tools.netlify.app/api/fetch-metadata";
 
-        async function fetchMetadata() {
-            const url = document.getElementById("url").value.trim();
-            if (!url) return;
+function ensureNetra(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    // Must be HTTPS and either netra.news or any *.netra.news subdomain
+    const domainOk = u.hostname === "netra.news" || u.hostname.endsWith(".netra.news");
+    const httpsOk = u.protocol === "https:";
+    return domainOk && httpsOk;
+  } catch {
+    return false;
+  }
+}
 
-            if (!ensureNetra(url)) {
-                alert("Safety check: Only https://netra.news or its subdomains (e.g. interactives.netra.news) are allowed.");
-                return;
-            }
+// --- NEW: call Netlify API instead of fetching the article HTML directly ---
+async function fetchMetadata() {
+  const url = document.getElementById("url").value.trim();
+  if (!url) return;
 
-            try {
-                const res = await fetch(url, { mode: "cors", credentials: "omit" });
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const html = await res.text();
-                extractAndFill(html);
-            } catch (err) {
-                alert("Fetch blocked (likely CORS) or failed. Paste HTML manually instead.");
-            }
-        }
+  if (!ensureNetra(url)) {
+    alert("Safety check: Only https://netra.news or its subdomains (e.g. interactives.netra.news) are allowed.");
+    return;
+  }
 
-        async function fetchMetadata() {
-            const url = document.getElementById('url').value.trim();
-            if (!url) return;
+  try {
+    const r = await fetch(`${ENDPOINT}?url=${encodeURIComponent(url)}`, { method: "GET" });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      // 422 means your required fields were missing; show details if present
+      const msg = data?.error || `Fetch failed (${r.status})`;
+      throw new Error(msg);
+    }
+    fillFromApi(data); // { title, byline, published, description?, canonical?, url }
+  } catch (err) {
+    console.error(err);
+    alert("Fetch blocked or failed. You can paste the page HTML instead.");
+  }
+}
 
-            if (!ensureNetra(url)) {
-                alert('Safety check: Only netra.news URLs can be fetched. Paste the HTML instead.');
-                return;
-            }
+// --- NEW: populate inputs from API JSON ---
+function fillFromApi(meta) {
+  const { title, byline, published } = meta || {};
 
-            try {
-                const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const html = await res.text();
-                extractAndFill(html);
-            } catch (err) {
-                alert("Fetch blocked (likely CORS) or failed. Paste HTML manually instead.");
-            }
-        }
+  if (title) document.getElementById("title").value = title;
+  if (byline) document.getElementById("author").value = byline;
 
-        function parsePasted() {
-            const html = document.getElementById('htmlPaste').value.trim();
-            if (html) extractAndFill(html);
-        }
+  if (published) {
+    const d = new Date(published);
+    if (!isNaN(d)) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      document.getElementById("date").value = `${y}-${m}-${day}`;
+    }
+  }
+}
 
-        function extractAndFill(html) {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
+// --- Keep: paste-HTML fallback path ---
+function parsePasted() {
+  const html = document.getElementById('htmlPaste').value.trim();
+  if (html) extractAndFill(html);
+}
 
-            // Title
-            const title =
-                doc.querySelector('meta[property="og:title"]')?.content ||
-                doc.querySelector('meta[name="twitter:title"]')?.content ||
-                (doc.title || '').trim();
+// --- Your existing HTML parser (unchanged) ---
+function extractAndFill(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
 
-            // Author priority: article:author → og:author → name=author → body
-            let author =
-                doc.querySelector('meta[property="article:author"]')?.content ||
-                doc.querySelector('meta[property="og:author"]')?.content ||
-                doc.querySelector('meta[name="author"]')?.content || '';
+  // Title
+  const title =
+    doc.querySelector('meta[property="og:title"]')?.content ||
+    doc.querySelector('meta[name="twitter:title"]')?.content ||
+    (doc.title || '').trim();
 
-            if (!author) {
-                const sel = [
-                    '.post-card-byline-author .author-link',
-                    '.post-card-byline-author',
-                    '[rel="author"]',
-                    '.author-link',
-                    '.post-full-author-name',
-                    '.byline a',
-                    '[itemprop="author"], [itemprop="author"] [itemprop="name"]'
-                ];
-                for (const s of sel) {
-                    const el = doc.querySelector(s);
-                    if (el) {
-                        author = el.textContent.trim();
-                        if (author) break;
-                    }
-                }
-            }
+  // Author priority: article:author → og:author → name=author → body
+  let author =
+    doc.querySelector('meta[property="article:author"]')?.content ||
+    doc.querySelector('meta[property="og:author"]')?.content ||
+    doc.querySelector('meta[name="author"]')?.content || '';
 
-            // Date
-            let dateIso =
-                doc.querySelector('meta[property="article:published_time"]')?.content ||
-                doc.querySelector('meta[name="pubdate"]')?.content ||
-                doc.querySelector('meta[itemprop="datePublished"]')?.content || '';
+  if (!author) {
+    const sel = [
+      '.post-card-byline-author .author-link',
+      '.post-card-byline-author',
+      '[rel="author"]',
+      '.author-link',
+      '.post-full-author-name',
+      '.byline a',
+      '[itemprop="author"], [itemprop="author"] [itemprop="name"]'
+    ];
+    for (const s of sel) {
+      const el = doc.querySelector(s);
+      if (el) {
+        author = el.textContent.trim();
+        if (author) break;
+      }
+    }
+  }
 
-            if (!dateIso) {
-                const timeEl = doc.querySelector('time[datetime]');
-                if (timeEl) dateIso = timeEl.getAttribute('datetime') || '';
-            }
+  // Date
+  let dateIso =
+    doc.querySelector('meta[property="article:published_time"]')?.content ||
+    doc.querySelector('meta[name="pubdate"]')?.content ||
+    doc.querySelector('meta[itemprop="datePublished"]')?.content || '';
 
-            if (title) document.getElementById('title').value = title;
-            if (author) document.getElementById('author').value = author;
+  if (!dateIso) {
+    const timeEl = doc.querySelector('time[datetime]');
+    if (timeEl) dateIso = timeEl.getAttribute('datetime') || '';
+  }
 
-            if (dateIso) {
-                const d = new Date(dateIso);
-                if (!isNaN(d)) {
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    document.getElementById('date').value = `${y}-${m}-${day}`;
-                }
-            }
-        }
+  if (title) document.getElementById('title').value = title;
+  if (author) document.getElementById('author').value = author;
 
-        function buildSnippet() {
-            const url = document.getElementById('url').value.trim();
-            const title = document.getElementById('title').value.trim();
-            const author = document.getElementById('author').value.trim();
-            const dateIso = document.getElementById('date').value;
-            const includeYear = document.getElementById('include-year').checked;
+  if (dateIso) {
+    const d = new Date(dateIso);
+    if (!isNaN(d)) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      document.getElementById('date').value = `${y}-${m}-${day}`;
+    }
+  }
+}
 
-            // Hard validation: all three must be present
-            if (!title) { alert('Missing story title.'); return; }
-            if (!author) { alert('Missing author/byline.'); return; }
-            if (!dateIso) { alert('Missing publish date.'); return; }
+function buildSnippet() {
+  const url = document.getElementById('url').value.trim();
+  const title = document.getElementById('title').value.trim();
+  const author = document.getElementById('author').value.trim();
+  const dateIso = document.getElementById('date').value;
+  const includeYear = document.getElementById('include-year').checked;
 
-            const dateTxt = formatDate(dateIso, includeYear);
-            if (!dateTxt) { alert('Invalid publish date.'); return; }
+  // Hard validation: all three must be present
+  if (!title) { alert('Missing story title.'); return; }
+  if (!author) { alert('Missing author/byline.'); return; }
+  if (!dateIso) { alert('Missing publish date.'); return; }
 
-            const html = `
+  const dateTxt = formatDate(dateIso, includeYear);
+  if (!dateTxt) { alert('Invalid publish date.'); return; }
+
+  const html = `
 <aside class="related-box" aria-label="Related story">
   <div class="related-label">Related</div>
 
@@ -373,42 +382,43 @@
 
   <div class="related-rule" role="presentation"></div>
 </aside>
-      `.trim();
+  `.trim();
 
-            document.getElementById('output').value = html;
-            document.getElementById('preview').innerHTML = html;
-        }
+  document.getElementById('output').value = html;
+  document.getElementById('preview').innerHTML = html;
+}
 
-        function esc(str) {
-            return String(str).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
+function esc(str) {
+  return String(str).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
-        function ordinal(n) {
-            const s = ["th", "st", "nd", "rd"], v = n % 100;
-            return n + (s[(v - 20) % 10] || s[v] || s[0]);
-        }
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
-        function formatDate(iso, includeYear = true) {
-            if (!iso) return "";
-            const d = new Date(iso + "T00:00:00");
-            if (isNaN(d)) return "";
-            const month = d.toLocaleString(undefined, { month: "long" });
-            const day = ordinal(d.getDate());
-            const year = d.getFullYear();
-            return includeYear ? `${month} ${day} ${year}` : `${month} ${day}`;
-        }
+function formatDate(iso, includeYear = true) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return "";
+  const month = d.toLocaleString(undefined, { month: "long" });
+  const day = ordinal(d.getDate());
+  const year = d.getFullYear();
+  return includeYear ? `${month} ${day} ${year}` : `${month} ${day}`;
+}
 
-        function copyOut() {
-            const txt = document.getElementById('output').value;
-            if (!txt) return;
-            navigator.clipboard.writeText(txt).then(() => alert("Copied!"));
-        }
+function copyOut() {
+  const txt = document.getElementById('output').value;
+  if (!txt) return;
+  navigator.clipboard.writeText(txt).then(() => alert("Copied!"));
+}
 
-        function fillDemo() {
-            document.getElementById('url').value =
-                "https://netra.news/2025/palatine-awami-league-lobbying-pr-uk/";
-        }
-    </script>
+function fillDemo() {
+  document.getElementById('url').value =
+    "https://netra.news/2025/palatine-awami-league-lobbying-pr-uk/";
+}
+</script>
+
 </body>
 
 </html>
