@@ -30,6 +30,12 @@
         .vertical-trim-cap-baseline {
             /* Keep as conceptual placeholder */
         }
+        
+        /* Fixes word spacing issues when converting to canvas by ensuring spaces are wide enough */
+        /* We removed text-justify for better html2canvas compatibility. */
+        #cardDescription {
+            word-spacing: 0.1em; /* Small adjustment for better word separation after canvas render fix */
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-noto-sans min-h-screen p-8">
@@ -134,7 +140,7 @@
                             <!-- Title: Noto Serif Bold (700), size 76px, leading 1.237, color #001E3E --><h1 id="cardTitle" class="font-noto-serif font-bold vertical-trim-cap-baseline" style="font-size: 76px; line-height: 1.237; margin-bottom: 50px; color: #001E3E;">
                                 মেক্সিকোর স্বাধীনতা ঘোষণা
                             </h1>
-                            <!-- Description: Noto Serif Regular (400), size 41px, leading 1.268, color #222222 --><p id="cardDescription" class="font-noto-serif font-normal text-justify vertical-trim-cap-baseline" style="font-size: 41px; line-height: 1.268; color: #222222;">
+                            <!-- Description: Noto Serif Regular (400), size 41px, leading 1.268, color #222222 --><p id="cardDescription" class="font-noto-serif font-normal text-left vertical-trim-cap-baseline" style="font-size: 41px; line-height: 1.268; color: #222222;">
                                 ১৮১০ থেকে ১৮২১ সাল পর্যন্ত চলা গৃহযুদ্ধ শেষে স্প্যানিশ সাম্রাজ্য থেকে স্বাধীনতা লাভ করেছিল মেক্সিকো। গৃহযুদ্ধের সময় গড়ে ওঠা কংগ্রেস অব চিলপানসিঙ্গো ১৮১৩ সালের ৬ নভেম্বর মেক্সিকোর স্বাধীনতা ঘোষণা করে এবং আনুষ্ঠানিকভাবে স্প্যানিশ মুকুট থেকে নিজেদের বিচ্ছিন্ন করে। রাজকীয় সরকারের পতনের পর ১৮ সেপ্টেম্বর ১৮২১ সালে মেক্সিকো সিটিতে মেক্সিকান সাম্রাজ্যের স্বাধীনতা ঘোষণাপত্রের খসড়া প্রণয়নের মাধ্যমে এ গৃহযুদ্ধের অবসান হয়।
                             </p>
                         </main>
@@ -188,7 +194,7 @@
             const descLeading = parseFloat(document.getElementById('inputDescLeading').value) || 1.268;
             const titleMarginPx = Math.max(10, parseInt(document.getElementById('inputTitleMargin').value) || 50);
             
-            // NEW: Read Header Margin value
+            // Read Header Margin value
             const headerMarginPx = Math.max(10, parseInt(document.getElementById('inputHeaderMargin').value) || 148);
 
             // 2. Read SVG content
@@ -233,7 +239,7 @@
 
             // 4. Apply Dynamic Styling
             
-            // NEW: Apply Header Margin
+            // Apply Header Margin
             const cardHeader = document.getElementById('cardHeader');
             cardHeader.style.marginBottom = `${headerMarginPx}px`;
 
@@ -268,7 +274,8 @@
                     scale: 1, // Set scale to 1 to ensure 1:1 pixel mapping
                     logging: false,
                     useCORS: true,
-                    backgroundColor: null, // Transparent background if needed, but the card has its own
+                    // FIX for solid background: Explicitly set the background color during capture
+                    backgroundColor: '#c1ddfa',
                 });
 
                 // Convert the canvas to a PNG Data URL
