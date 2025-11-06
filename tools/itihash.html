@@ -26,11 +26,9 @@
         }
 
         /* Adjustments for vertical trim (cap height to baseline) - often requires specific font metrics or manual adjustment */
-        /* For Noto Serif Bengali, setting line-height explicitly to ratio usually works well for visual alignment */
+        /* For web fonts, relying on line-height and visual alignment is standard. */
         .vertical-trim-cap-baseline {
-            /* This is a conceptual class. Exact implementation depends on specific font files and desired precision.
-               For web fonts, relying on line-height and visual alignment is standard.
-               If exact cap height/baseline trimming is critical, custom font loading and JS calculation might be needed. */
+            /* Keep as conceptual placeholder */
         }
     </style>
 </head>
@@ -79,6 +77,14 @@
                     <input type="number" id="inputDescLeading" oninput="updateCard()" value="1.268" min="1.0" step="0.001" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 
+                <h3 class="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">ব্যবধান নিয়ন্ত্রণ</h3>
+                
+                <!-- NEW: Spacing between Header and Title -->
+                <div class="mb-4">
+                    <label for="inputHeaderMargin" class="block text-sm font-medium text-gray-700 mb-1">হেডার ও শিরোনামের মধ্যে ব্যবধান (px):</label>
+                    <input type="number" id="inputHeaderMargin" oninput="updateCard()" value="148" min="10" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
                 <!-- Spacing between Title and Description (Defaulting to 50px) --><div class="mb-6">
                     <label for="inputTitleMargin" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম ও বর্ণনার মধ্যে ব্যবধান (px):</label>
                     <input type="number" id="inputTitleMargin" oninput="updateCard()" value="50" min="10" step="10" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
@@ -117,7 +123,9 @@
                     
                     <div id="photocard" class="flex flex-col justify-between rounded-xl overflow-hidden vertical-trim-cap-baseline">
                         
-                        <!-- Header: Noto Serif Semibold (600), size 50px --><header class="flex justify-between items-center font-noto-serif font-semibold mb-16" style="font-size: 50px;">
+                        <!-- Header: Noto Serif Semibold (600), size 50px -->
+                        <!-- mb-16 removed, margin applied via JS for 148px spacing -->
+                        <header id="cardHeader" class="flex justify-between items-center font-noto-serif font-semibold" style="font-size: 50px;">
                             <!-- Date color: #222222 --><div id="cardDate" style="color: #222222;">৬ নভেম্বর</div>
                             <!-- Header Text color: #001E3E --><div style="color: #001E3E;">ইতিহাসে এই দিনে</div>
                         </header>
@@ -179,6 +187,9 @@
             const descSizePx = Math.max(16, parseInt(document.getElementById('inputDescSize').value) || 41);
             const descLeading = parseFloat(document.getElementById('inputDescLeading').value) || 1.268;
             const titleMarginPx = Math.max(10, parseInt(document.getElementById('inputTitleMargin').value) || 50);
+            
+            // NEW: Read Header Margin value
+            const headerMarginPx = Math.max(10, parseInt(document.getElementById('inputHeaderMargin').value) || 148);
 
             // 2. Read SVG content
             const logoSvg = document.getElementById('inputLogoSvg').value.trim();
@@ -221,6 +232,11 @@
 
 
             // 4. Apply Dynamic Styling
+            
+            // NEW: Apply Header Margin
+            const cardHeader = document.getElementById('cardHeader');
+            cardHeader.style.marginBottom = `${headerMarginPx}px`;
+
             const cardTitle = document.getElementById('cardTitle');
             cardTitle.style.fontSize = `${titleSizePx}px`;
             cardTitle.style.lineHeight = titleLeading;
