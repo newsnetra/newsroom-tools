@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bengali Photocard Generator</title>
+    <title>Bengali Photocard Generator (SVG Export)</title>
     <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Google Fonts for Bengali (including Noto Serif 400, 600, 700 weights) --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Load Google Fonts for Bengali --><link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Load html2canvas for image export --><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- Load dom-to-svg for SVG export -->
+    <script src="https://cdn.jsdelivr.net/npm/dom-to-svg@0.2.2/dist/dom-to-svg.min.js"></script>
     <style>
         /* Custom font classes matching the user request */
         .font-noto-sans { font-family: 'Noto Sans Bengali', sans-serif; }
@@ -25,24 +26,22 @@
             padding: 102px 76px 61.82px 76px;
         }
 
-        /* Adjustments for vertical trim (cap height to baseline) - often requires specific font metrics or manual adjustment */
-        /* For web fonts, relying on line-height and visual alignment is standard. */
+        /* Adjustments for vertical trim (cap height to baseline) - Conceptual */
         .vertical-trim-cap-baseline {
-            /* Keep as conceptual placeholder */
+            /* Kept as conceptual placeholder for CSS control */
         }
         
-        /* Fixes word spacing issues when converting to canvas by ensuring spaces are wide enough */
-        /* We removed text-justify for better html2canvas compatibility. */
+        /* Fixes word spacing issues when converting to canvas/svg by ensuring spaces are wide enough */
         #cardDescription {
-            word-spacing: 0.1em; /* Small adjustment for better word separation after canvas render fix */
+            word-spacing: 0.1em; /* Small adjustment for better word separation */
         }
     </style>
 </head>
 <body class="bg-gray-50 font-noto-sans min-h-screen p-8">
 
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6 text-gray-800">ঐতিহাসিক ফটোকার্ড জেনারেটর</h1>
-        <p class="mb-8 text-gray-600">নিচের ইনপুট ফিল্ডগুলো পূরণ করুন। ডানদিকে কার্ডের প্রিভিউ দেখুন এবং PNG হিসেবে ডাউনলোড করুন।</p>
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">ঐতিহাসিক ফটোকার্ড জেনারেটর (SVG)</h1>
+        <p class="mb-8 text-gray-600">নিচের ইনপুট ফিল্ডগুলো পূরণ করুন। ডানদিকে কার্ডের প্রিভিউ দেখুন এবং SVG হিসেবে ডাউনলোড করুন।</p>
 
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Input Panel --><div class="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-lg h-fit sticky top-8">
@@ -64,7 +63,7 @@
                 
                 <h3 class="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">ফন্ট নিয়ন্ত্রণ (Figma Defaults)</h3>
 
-                <!-- Title Controls (Defaulting to Figma values but kept for flexibility) --><div class="mb-4">
+                <!-- Title Controls --><div class="mb-4">
                     <label for="inputTitleSize" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম ফন্ট সাইজ (px):</label>
                     <input type="number" id="inputTitleSize" oninput="updateCard()" value="76" min="50" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
@@ -73,25 +72,24 @@
                     <input type="number" id="inputTitleLeading" oninput="updateCard()" value="1.237" min="1.0" step="0.001" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 
-                <!-- Description Font Size (Defaulting to Figma values but kept for flexibility) --><div class="mb-4">
+                <!-- Description Font Size --><div class="mb-4">
                     <label for="inputDescSize" class="block text-sm font-medium text-gray-700 mb-1">বর্ণনা ফন্ট সাইজ (px):</label>
                     <input type="number" id="inputDescSize" oninput="updateCard()" value="41" min="16" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Description Line Height (Defaulting to Figma values but kept for flexibility) --><div class="mb-6">
+                <!-- Description Line Height --><div class="mb-6">
                     <label for="inputDescLeading" class="block text-sm font-medium text-gray-700 mb-1">বর্ণনা লাইন উচ্চতা (রেশিও):</label>
                     <input type="number" id="inputDescLeading" oninput="updateCard()" value="1.268" min="1.0" step="0.001" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 
                 <h3 class="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">ব্যবধান নিয়ন্ত্রণ</h3>
                 
-                <!-- NEW: Spacing between Header and Title -->
-                <div class="mb-4">
+                <!-- Spacing between Header and Title (148px) --><div class="mb-4">
                     <label for="inputHeaderMargin" class="block text-sm font-medium text-gray-700 mb-1">হেডার ও শিরোনামের মধ্যে ব্যবধান (px):</label>
                     <input type="number" id="inputHeaderMargin" oninput="updateCard()" value="148" min="10" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
-                <!-- Spacing between Title and Description (Defaulting to 50px) --><div class="mb-6">
+                <!-- Spacing between Title and Description (50px) --><div class="mb-6">
                     <label for="inputTitleMargin" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম ও বর্ণনার মধ্যে ব্যবধান (px):</label>
                     <input type="number" id="inputTitleMargin" oninput="updateCard()" value="50" min="10" step="10" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
@@ -117,9 +115,9 @@
                 </div>
 
 
-                <button onclick="exportCard()" id="exportButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    PNG (1000x1250px) ডাউনলোড করুন
+                <button onclick="exportSVG()" id="exportButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 16l4-16M6 16l4-16m4 16l4-16"></path></svg>
+                    SVG (Resolution Independent) ডাউনলোড করুন
                 </button>
                 <div id="statusMessage" class="mt-4 text-sm text-center text-red-600 hidden"></div>
             </div>
@@ -130,14 +128,15 @@
                     <div id="photocard" class="flex flex-col justify-between rounded-xl overflow-hidden vertical-trim-cap-baseline">
                         
                         <!-- Header: Noto Serif Semibold (600), size 50px -->
-                        <!-- mb-16 removed, margin applied via JS for 148px spacing -->
                         <header id="cardHeader" class="flex justify-between items-center font-noto-serif font-semibold" style="font-size: 50px;">
                             <!-- Date color: #222222 --><div id="cardDate" style="color: #222222;">৬ নভেম্বর</div>
                             <!-- Header Text color: #001E3E --><div style="color: #001E3E;">ইতিহাসে এই দিনে</div>
                         </header>
 
                         <!-- Main Content --><main class="flex-grow">
-                            <!-- Title: Noto Serif Bold (700), size 76px, leading 1.237, color #001E3E --><h1 id="cardTitle" class="font-noto-serif font-bold vertical-trim-cap-baseline" style="font-size: 76px; line-height: 1.237; margin-bottom: 50px; color: #001E3E;">
+                            <!-- Title: Noto Serif Bold (700), size 76px, leading 1.237, color #001E3E -->
+                            <!-- Margin-bottom applied via JS -->
+                            <h1 id="cardTitle" class="font-noto-serif font-bold vertical-trim-cap-baseline" style="font-size: 76px; line-height: 1.237; margin-bottom: 50px; color: #001E3E;">
                                 মেক্সিকোর স্বাধীনতা ঘোষণা
                             </h1>
                             <!-- Description: Noto Serif Regular (400), size 41px, leading 1.268, color #222222 --><p id="cardDescription" class="font-noto-serif font-normal text-left vertical-trim-cap-baseline" style="font-size: 41px; line-height: 1.268; color: #222222;">
@@ -253,8 +252,8 @@
             cardDescription.style.lineHeight = descLeading;
         }
 
-        // Function to export the card as PNG
-        async function exportCard() {
+        // Function to export the card as SVG (using dom-to-svg)
+        async function exportSVG() {
             const cardElement = document.getElementById('photocard');
             const exportButton = document.getElementById('exportButton');
             const statusMessage = document.getElementById('statusMessage');
@@ -266,39 +265,32 @@
             statusMessage.classList.add('hidden');
 
             try {
-                // html2canvas takes the card element and renders it to a canvas
-                const canvas = await html2canvas(cardElement, {
-                    // Ensures the canvas is exactly 1000x1250 pixels
-                    width: 1000,
-                    height: 1250,
-                    scale: 1, // Set scale to 1 to ensure 1:1 pixel mapping
-                    logging: false,
-                    useCORS: true,
-                    // FIX for solid background: Explicitly set the background color during capture
-                    backgroundColor: '#c1ddfa',
-                });
-
-                // Convert the canvas to a PNG Data URL
-                const image = canvas.toDataURL('image/png', 1.0);
-
+                // Convert the DOM element to SVG
+                const svgDocument = createSvg(cardElement);
+                const svgString = new XMLSerializer().serializeToString(svgDocument);
+                
+                // Create a Blob from the SVG string
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                
                 // Create a temporary link element to trigger the download
                 const link = document.createElement('a');
-                link.download = 'photocard-' + new Date().toISOString().slice(0, 10) + '.png';
-                link.href = image;
+                link.download = 'photocard-' + new Date().toISOString().slice(0, 10) + '.svg';
+                link.href = URL.createObjectURL(blob);
+                
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
 
             } catch (error) {
-                console.error("Image generation failed:", error);
-                statusMessage.innerText = "দুঃখিত, কার্ড ডাউনলোড ব্যর্থ হয়েছে। কনসোলে ত্রুটি দেখুন।";
+                console.error("SVG generation failed:", error);
+                statusMessage.innerText = "দুঃখিত, SVG ডাউনলোড ব্যর্থ হয়েছে। কনসোলে ত্রুটি দেখুন।";
                 statusMessage.classList.remove('hidden');
             } finally {
                 // Reset button state
                 exportButton.disabled = false;
                 exportButton.classList.remove('bg-gray-400');
                 exportButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                exportButton.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>PNG (1000x1250px) ডাউনলোড করুন';
+                exportButton.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 16l4-16M6 16l4-16m4 16l4-16"></path></svg>SVG (Resolution Independent) ডাউনলোড করুন';
             }
         }
     </script>
