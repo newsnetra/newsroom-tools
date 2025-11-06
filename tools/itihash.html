@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bengali Photocard Generator</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Google Fonts for Bengali (including Noto Serif 400, 600, 700 weights) --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Load html2canvas for image export --><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        /* Custom font classes matching the user request */
+        .font-noto-sans { font-family: 'Noto Sans Bengali', sans-serif; }
+        .font-noto-serif { font-family: 'Noto Serif Bengali', serif; }
+        
+        /* Fixed size for the card */
+        #photocard {
+            width: 1000px;
+            height: 1250px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* Background color: c1ddfa */
+            background-color: #c1ddfa; 
+            /* Figma Padding: Top 102, Left/Right 76, Bottom 61.82 */
+            padding: 102px 76px 61.82px 76px;
+        }
+
+        /* Adjustments for vertical trim (cap height to baseline) - often requires specific font metrics or manual adjustment */
+        /* For Noto Serif Bengali, setting line-height explicitly to ratio usually works well for visual alignment */
+        .vertical-trim-cap-baseline {
+            /* This is a conceptual class. Exact implementation depends on specific font files and desired precision.
+               For web fonts, relying on line-height and visual alignment is standard.
+               If exact cap height/baseline trimming is critical, custom font loading and JS calculation might be needed. */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-noto-sans min-h-screen p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">ঐতিহাসিক ফটোকার্ড জেনারেটর</h1>
+        <p class="mb-8 text-gray-600">নিচের ইনপুট ফিল্ডগুলো পূরণ করুন। ডানদিকে কার্ডের প্রিভিউ দেখুন এবং PNG হিসেবে ডাউনলোড করুন।</p>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Input Panel --><div class="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-lg h-fit sticky top-8">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">কার্ড ডেটা ও স্টাইল (Figma Defaults)</h2>
+
+                <!-- Text Content --><div class="mb-4">
+                    <label for="inputDate" class="block text-sm font-medium text-gray-700 mb-1">তারিখ (যেমন: ৬ নভেম্বর):</label>
+                    <input type="text" id="inputDate" oninput="updateCard()" value="৬ নভেম্বর" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <!-- TITLE INPUT CHANGED TO TEXTAREA to allow line breaks -->
+                <div class="mb-4">
+                    <label for="inputTitle" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম (এন্টার চেপে লাইন ব্রেক করুন):</label>
+                    <textarea id="inputTitle" oninput="updateCard()" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">মেক্সিকোর স্বাধীনতা ঘোষণা</textarea>
+                </div>
+                <div class="mb-6">
+                    <label for="inputDescription" class="block text-sm font-medium text-gray-700 mb-1">বর্ণনা:</label>
+                    <textarea id="inputDescription" oninput="updateCard()" rows="10" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">১৮১০ থেকে ১৮২১ সাল পর্যন্ত চলা গৃহযুদ্ধ শেষে স্প্যানিশ সাম্রাজ্য থেকে স্বাধীনতা লাভ করেছিল মেক্সিকো। গৃহযুদ্ধের সময় গড়ে ওঠা কংগ্রেস অব চিলপানসিঙ্গো ১৮১৩ সালের ৬ নভেম্বর মেক্সিকোর স্বাধীনতা ঘোষণা করে এবং আনুষ্ঠানিকভাবে স্প্যানিশ মুকুট থেকে নিজেদের বিচ্ছিন্ন করে। রাজকীয় সরকারের পতনের পর ১৮ সেপ্টেম্বর ১৮২১ সালে মেক্সিকো সিটিতে মেক্সিকান সাম্রাজ্যের স্বাধীনতা ঘোষণাপত্রের খসড়া প্রণয়নের মাধ্যমে এ গৃহযুদ্ধের অবসান হয়।</textarea>
+                </div>
+                
+                <h3 class="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">ফন্ট নিয়ন্ত্রণ (Figma Defaults)</h3>
+
+                <!-- Title Controls (Defaulting to Figma values but kept for flexibility) --><div class="mb-4">
+                    <label for="inputTitleSize" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম ফন্ট সাইজ (px):</label>
+                    <input type="number" id="inputTitleSize" oninput="updateCard()" value="76" min="50" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label for="inputTitleLeading" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম লাইন উচ্চতা (রেশিও):</label>
+                    <input type="number" id="inputTitleLeading" oninput="updateCard()" value="1.237" min="1.0" step="0.001" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- Description Font Size (Defaulting to Figma values but kept for flexibility) --><div class="mb-4">
+                    <label for="inputDescSize" class="block text-sm font-medium text-gray-700 mb-1">বর্ণনা ফন্ট সাইজ (px):</label>
+                    <input type="number" id="inputDescSize" oninput="updateCard()" value="41" min="16" step="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Description Line Height (Defaulting to Figma values but kept for flexibility) --><div class="mb-6">
+                    <label for="inputDescLeading" class="block text-sm font-medium text-gray-700 mb-1">বর্ণনা লাইন উচ্চতা (রেশিও):</label>
+                    <input type="number" id="inputDescLeading" oninput="updateCard()" value="1.268" min="1.0" step="0.001" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <!-- Spacing between Title and Description (Defaulting to 50px) --><div class="mb-6">
+                    <label for="inputTitleMargin" class="block text-sm font-medium text-gray-700 mb-1">শিরোনাম ও বর্ণনার মধ্যে ব্যবধান (px):</label>
+                    <input type="number" id="inputTitleMargin" oninput="updateCard()" value="50" min="10" step="10" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <h3 class="text-lg font-semibold mb-3 text-gray-700 border-t pt-4">লোগো (SVG)</h3>
+                
+                <!-- SVG Input --><div class="mb-6">
+                    <label for="inputLogoSvg" class="block text-sm font-medium text-gray-700 mb-1">SVG কোড পেস্ট করুন (সম্পূর্ণ <svg> ট্যাগ):</label>
+                    <textarea id="inputLogoSvg" oninput="updateCard()" rows="5" placeholder="<svg width='153' height='24.18' viewBox='0 0 153 24.18'>...</svg>" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-blue-500 focus:border-blue-500"><svg width="153" height="25" viewBox="0 0 153 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M33.2573 19.2335C32.723 20.2353 31.9884 21.237 31.1203 22.0384C29.5175 23.4408 27.514 24.1754 25.3102 24.1754C21.1029 24.1754 16.6953 21.5041 16.6953 15.0263C16.6953 9.81724 19.9009 5.74353 25.1767 5.74353C28.5825 5.74353 30.7196 7.41309 31.7881 8.94908C32.8566 10.4851 33.5244 13.2231 33.4576 15.4937H19.7673C19.8341 19.1 22.305 21.4373 25.3102 21.4373C26.7126 21.4373 27.9147 21.0367 28.9165 20.1685C29.7178 19.5007 30.3189 18.6325 30.7196 17.7643L33.2573 19.2335ZM30.2521 13.0228C29.7178 10.2847 27.6476 8.4816 25.1099 8.4816C22.5721 8.4816 20.4351 10.4183 19.9676 13.0228H30.2521Z" fill="#001E3E"/>
+<path d="M41.1368 9.01571V23.7078H38.1316V9.01571H36.2617V6.21086H38.1316V0.0668945H41.1368V6.21086H44.142V9.01571H41.1368Z" fill="#001E3E"/>
+<path d="M47.0824 6.21101H50.0876V8.08091C50.3547 7.61343 51.6904 5.74353 54.0278 5.74353C54.9627 5.74353 55.9644 6.07744 56.699 6.47813L55.2966 9.21621C54.6288 8.74873 53.961 8.61517 53.4935 8.61517C52.2914 8.61517 51.49 9.14942 51.0226 9.68368C50.4883 10.3515 50.0208 11.5536 50.0208 14.4252V23.6412H47.0156V6.21101H47.0824Z" fill="#001E3E"/>
+<path d="M72.0585 6.21101H75.0637V23.7079H72.0585V21.237C71.0568 22.5726 69.1201 24.1754 66.0481 24.1754C61.6405 24.1754 57.5 21.0367 57.5 14.8927C57.5 8.88229 61.5737 5.74353 66.0481 5.74353C69.454 5.74353 71.2571 7.61343 72.0585 8.68195V6.21101ZM60.7055 14.9595C60.7055 18.6993 62.8426 21.5041 66.4488 21.5041C70.1886 21.5041 72.2589 18.4321 72.2589 14.9595C72.2589 10.4183 69.1201 8.4816 66.4488 8.4816C63.4436 8.4816 60.7055 10.6854 60.7055 14.9595Z" fill="#001E3E"/>
+<path d="M14.091 23.7079H11.0858V14.5588C11.0858 13.2899 11.0191 11.2196 9.81699 9.81722C8.94882 8.7487 7.81352 8.48158 6.745 8.48158C5.40936 8.48158 4.47441 9.01583 3.87337 9.75044C3.13876 10.6854 3.07198 11.8875 3.07198 12.956V17.0297H0V12.8892C0 10.9525 0.133564 9.48331 1.00173 8.21445C2.07025 6.61167 3.94015 5.81029 6.0104 5.81029C8.94882 5.81029 10.4848 7.54662 11.0191 8.28123V0.0670166H14.0243V23.7079H14.091Z" fill="#001E3E"/>
+<path d="M35.395 0H11.0195V0.667822H35.395V0Z" fill="#001E3E"/>
+<path d="M75.1279 0H44.0742V0.667822H75.1279V0Z" fill="#001E3E"/>
+<path d="M88.4884 5.47607C87.1528 5.47607 86.0175 5.7432 85.0157 6.27746C84.014 6.81172 83.1458 7.67989 82.478 8.7484L82.1441 9.21588V6.1439H80.1406V23.3737H82.2109V14.3581C82.2109 11.9539 82.6783 10.2176 83.5465 9.08231C84.4815 7.94702 85.8839 7.34598 87.7538 7.34598C89.3566 7.34598 90.4919 7.81345 91.2933 8.68162C92.0279 9.54979 92.4285 10.8854 92.4285 12.6886V23.3737H94.5656V11.62C94.5656 9.68335 94.0313 8.14736 92.9628 7.07885C91.9611 6.01033 90.4251 5.47607 88.4884 5.47607Z" fill="#001E3E"/>
+<path d="M106.516 5.47607C104.045 5.47607 101.975 6.34424 100.439 8.08058C98.9029 9.81692 98.1016 12.0875 98.1016 14.9591C98.1016 17.6972 98.9029 19.9678 100.439 21.6374C101.975 23.3069 104.045 24.1751 106.583 24.1751C108.453 24.1751 109.989 23.7744 111.258 22.973C112.46 22.1716 113.528 20.9028 114.396 19.2332L112.46 18.1647C111.792 19.5003 110.991 20.5689 110.056 21.2367C109.054 21.9713 107.852 22.3052 106.583 22.3052C104.713 22.3052 103.244 21.6374 102.175 20.3017C101.107 18.9661 100.506 17.163 100.439 14.8924V14.692H114.396V14.3581C114.396 11.6868 113.662 9.54979 112.259 7.94702C110.79 6.27746 108.854 5.47607 106.516 5.47607ZM100.573 12.8889V12.6886C100.706 11.1526 101.307 9.8837 102.376 8.88197C103.377 7.94702 104.713 7.47954 106.182 7.47954C107.852 7.47954 109.187 7.94702 110.122 8.88197C111.124 9.81692 111.658 11.0858 111.792 12.7553V12.9557H100.573V12.8889Z" fill="#001E3E"/>
+<path d="M138.037 6.1439L133.362 19.0996L127.886 5.47607L122.343 19.0996L117.669 6.1439H115.465L122.21 24.1751L127.886 10.2176L133.496 24.1751L140.241 6.1439H138.037Z" fill="#001E3E"/>
+<path d="M143.051 23.1736C144.12 23.8414 145.388 24.1753 146.791 24.1753C148.661 24.1753 150.197 23.7079 151.332 22.7729C152.467 21.838 153.002 20.5691 153.002 19.0331C153.002 17.6975 152.668 16.629 152.067 15.8276C151.399 15.093 150.13 14.3584 148.260 13.6905C146.524 13.0895 145.388 12.622 144.854 12.0878C144.253 11.5535 143.986 10.9525 143.986 10.1511C143.986 9.3497 144.253 8.68187 144.854 8.14762C145.455 7.61336 146.19 7.34623 147.058 7.34623C147.993 7.34623 148.861 7.54658 149.529 8.01405C150.13 8.41475 150.597 9.01578 150.931 9.81717L152.868 8.74866C152.401 7.68014 151.733 6.87875 150.798 6.3445C149.796 5.74346 148.661 5.40955 147.258 5.40955C145.656 5.40955 144.32 5.87702 143.251 6.81197C142.25 7.74692 141.715 8.949 141.715 10.3514C141.715 11.4199 142.049 12.3549 142.784 13.0895C143.519 13.8241 144.787 14.5587 146.591 15.2933C146.724 15.3601 146.924 15.4269 147.192 15.5604C149.663 16.4954 150.865 17.6975 150.865 19.1667C150.865 20.1016 150.531 20.8362 149.863 21.3705C149.195 21.9048 148.394 22.1719 147.325 22.1719C146.257 22.1719 145.322 21.9048 144.587 21.3705C143.852 20.903 143.318 20.1684 142.918 19.2335L140.914 20.3688C141.248 21.6376 142.049 22.5058 143.051 23.1736Z" fill="#001E3E"/>
+</svg></textarea>
+                    <p class="text-xs text-gray-500 mt-1">লোগো সাইজ স্থির: 153px x 24.18px</p>
+                </div>
+
+
+                <button onclick="exportCard()" id="exportButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    PNG (1000x1250px) ডাউনলোড করুন
+                </button>
+                <div id="statusMessage" class="mt-4 text-sm text-center text-red-600 hidden"></div>
+            </div>
+
+            <!-- Card Preview --><div class="w-full lg:w-2/3 flex justify-center lg:justify-start">
+                <div id="photocard-wrapper" class="scale-50 sm:scale-75 md:scale-90 lg:scale-100 origin-top-left">
+                    
+                    <div id="photocard" class="flex flex-col justify-between rounded-xl overflow-hidden vertical-trim-cap-baseline">
+                        
+                        <!-- Header: Noto Serif Semibold (600), size 50px --><header class="flex justify-between items-center font-noto-serif font-semibold mb-16" style="font-size: 50px;">
+                            <!-- Date color: #222222 --><div id="cardDate" style="color: #222222;">৬ নভেম্বর</div>
+                            <!-- Header Text color: #001E3E --><div style="color: #001E3E;">ইতিহাসে এই দিনে</div>
+                        </header>
+
+                        <!-- Main Content --><main class="flex-grow">
+                            <!-- Title: Noto Serif Bold (700), size 76px, leading 1.237, color #001E3E --><h1 id="cardTitle" class="font-noto-serif font-bold vertical-trim-cap-baseline" style="font-size: 76px; line-height: 1.237; margin-bottom: 50px; color: #001E3E;">
+                                মেক্সিকোর স্বাধীনতা ঘোষণা
+                            </h1>
+                            <!-- Description: Noto Serif Regular (400), size 41px, leading 1.268, color #222222 --><p id="cardDescription" class="font-noto-serif font-normal text-justify vertical-trim-cap-baseline" style="font-size: 41px; line-height: 1.268; color: #222222;">
+                                ১৮১০ থেকে ১৮২১ সাল পর্যন্ত চলা গৃহযুদ্ধ শেষে স্প্যানিশ সাম্রাজ্য থেকে স্বাধীনতা লাভ করেছিল মেক্সিকো। গৃহযুদ্ধের সময় গড়ে ওঠা কংগ্রেস অব চিলপানসিঙ্গো ১৮১৩ সালের ৬ নভেম্বর মেক্সিকোর স্বাধীনতা ঘোষণা করে এবং আনুষ্ঠানিকভাবে স্প্যানিশ মুকুট থেকে নিজেদের বিচ্ছিন্ন করে। রাজকীয় সরকারের পতনের পর ১৮ সেপ্টেম্বর ১৮২১ সালে মেক্সিকো সিটিতে মেক্সিকান সাম্রাজ্যের স্বাধীনতা ঘোষণাপত্রের খসড়া প্রণয়নের মাধ্যমে এ গৃহযুদ্ধের অবসান হয়।
+                            </p>
+                        </main>
+
+                        <!-- Footer: Vertically centered (items-center) --><footer class="flex justify-between items-center pt-16" style="color: #153250;">
+                            <!-- Logo container: Fixed size 153x24.18px --><div id="cardLogo" style="width: 153px; height: 24.18px;">
+                                <!-- SVG will be inserted here by JavaScript --></div>
+                            <!-- URL: Noto Serif Regular, size 30px, color #153250 --><div id="cardUrl" class="text-right font-noto-serif font-normal vertical-trim-cap-baseline" style="font-size: 30px; color: #153250;">netra.news</div>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Set the default scale for better viewing on smaller screens
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapper = document.getElementById('photocard-wrapper');
+            const card = document.getElementById('photocard');
+
+            function adjustScale() {
+                const availableWidth = wrapper.parentElement.clientWidth;
+                const cardWidth = card.offsetWidth;
+                
+                // Only scale if the card is wider than the available space
+                if (cardWidth > availableWidth) {
+                    const scale = availableWidth / cardWidth;
+                    wrapper.style.transform = `scale(${scale * 0.95})`; // 95% of available space
+                    wrapper.style.transformOrigin = 'top left';
+                } else {
+                    wrapper.style.transform = 'scale(1)';
+                }
+            }
+
+            adjustScale();
+            window.addEventListener('resize', adjustScale);
+
+            // Initial content update
+            updateCard();
+        });
+
+
+        // Function to dynamically update the card content and apply dynamic styles
+        function updateCard() {
+            // 1. Read dynamic style values (using Figma specs as defaults)
+            const titleSizePx = Math.max(50, parseInt(document.getElementById('inputTitleSize').value) || 76);
+            const titleLeading = parseFloat(document.getElementById('inputTitleLeading').value) || 1.237;
+            const descSizePx = Math.max(16, parseInt(document.getElementById('inputDescSize').value) || 41);
+            const descLeading = parseFloat(document.getElementById('inputDescLeading').value) || 1.268;
+            const titleMarginPx = Math.max(10, parseInt(document.getElementById('inputTitleMargin').value) || 50);
+
+            // 2. Read SVG content
+            const logoSvg = document.getElementById('inputLogoSvg').value.trim();
+
+            // 3. Apply Text Content
+            document.getElementById('cardDate').innerText = document.getElementById('inputDate').value || 'তারিখ';
+            
+            // --- UPDATED TITLE LOGIC: HANDLE LINE BREAKS ---
+            const titleInput = document.getElementById('inputTitle').value || 'শিরোনাম';
+            // Replace newline characters (\n) with HTML <br> tags
+            const titleHtml = titleInput.replace(/\n/g, '<br>');
+            document.getElementById('cardTitle').innerHTML = titleHtml; // Use innerHTML to render <br>
+            
+            document.getElementById('cardDescription').innerText = document.getElementById('inputDescription').value || 'বর্ণনা...';
+            
+            // Apply SVG or fallback text
+            const cardLogo = document.getElementById('cardLogo');
+            if (logoSvg) {
+                cardLogo.innerHTML = logoSvg;
+                // Ensure SVG children fill the fixed-size container
+                const svgElement = cardLogo.querySelector('svg');
+                if (svgElement) {
+                    svgElement.style.width = '100%';
+                    svgElement.style.height = '100%';
+                    // Add fill/stroke color from theme if not already defined in SVG
+                    const themeColor = '#153250'; // Using the header/footer color
+                    if (!svgElement.getAttribute('fill') && !svgElement.querySelector('[fill]')) {
+                        svgElement.setAttribute('fill', themeColor);
+                    }
+                    // If the SVG itself has a fill, let it override or ensure its paths inherit
+                    svgElement.querySelectorAll('path').forEach(path => {
+                        if (!path.getAttribute('fill')) {
+                            path.setAttribute('fill', themeColor);
+                        }
+                    });
+                }
+            } else {
+                cardLogo.innerHTML = ''; // Keep empty if no SVG, as per the Figma design.
+            }
+
+
+            // 4. Apply Dynamic Styling
+            const cardTitle = document.getElementById('cardTitle');
+            cardTitle.style.fontSize = `${titleSizePx}px`;
+            cardTitle.style.lineHeight = titleLeading;
+            cardTitle.style.marginBottom = `${titleMarginPx}px`; // Apply dynamic margin
+
+            const cardDescription = document.getElementById('cardDescription');
+            cardDescription.style.fontSize = `${descSizePx}px`;
+            cardDescription.style.lineHeight = descLeading;
+        }
+
+        // Function to export the card as PNG
+        async function exportCard() {
+            const cardElement = document.getElementById('photocard');
+            const exportButton = document.getElementById('exportButton');
+            const statusMessage = document.getElementById('statusMessage');
+
+            exportButton.disabled = true;
+            exportButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            exportButton.classList.add('bg-gray-400');
+            exportButton.innerHTML = '<svg class="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>প্রস্তুত হচ্ছে...';
+            statusMessage.classList.add('hidden');
+
+            try {
+                // html2canvas takes the card element and renders it to a canvas
+                const canvas = await html2canvas(cardElement, {
+                    // Ensures the canvas is exactly 1000x1250 pixels
+                    width: 1000,
+                    height: 1250,
+                    scale: 1, // Set scale to 1 to ensure 1:1 pixel mapping
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: null, // Transparent background if needed, but the card has its own
+                });
+
+                // Convert the canvas to a PNG Data URL
+                const image = canvas.toDataURL('image/png', 1.0);
+
+                // Create a temporary link element to trigger the download
+                const link = document.createElement('a');
+                link.download = 'photocard-' + new Date().toISOString().slice(0, 10) + '.png';
+                link.href = image;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch (error) {
+                console.error("Image generation failed:", error);
+                statusMessage.innerText = "দুঃখিত, কার্ড ডাউনলোড ব্যর্থ হয়েছে। কনসোলে ত্রুটি দেখুন।";
+                statusMessage.classList.remove('hidden');
+            } finally {
+                // Reset button state
+                exportButton.disabled = false;
+                exportButton.classList.remove('bg-gray-400');
+                exportButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                exportButton.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>PNG (1000x1250px) ডাউনলোড করুন';
+            }
+        }
+    </script>
+</body>
+</html>
